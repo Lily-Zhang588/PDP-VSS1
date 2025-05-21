@@ -1,0 +1,28 @@
+1. Credit Card Dataset (CCD)
+
+Description: Anonymized credit card transaction dataset for fraud detection, containing 284,807 transactions (492 fraudulent).
+Original Source: European credit cardholder transaction data.
+Download Link: https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
+
+2.Breast Cancer Dataset (BCD)
+
+Description: Wisconsin Breast Cancer Diagnostic Dataset (569 samples, 30 features).
+Original Source: UCI Machine Learning Repository.
+Download Link:https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic
+Or load directly via scikit-learn:
+from sklearn.datasets import load_breast_cancer
+data = load_breast_cancer()
+
+3.3. Give Me Some Credit (GMSC) Dataset
+
+Description: Credit scoring dataset (150,000 samples, 10 features).
+Original Source: Kaggle competition data.
+Download Link:https://www.kaggle.com/
+
+4. Bank Marketing Dataset (BMD)
+
+Description: Portuguese bank marketing campaign data (41,188 samples, 20 raw features + 14 derived features).
+Original Source: UCI Machine Learning Repository.
+Download Link:https://archive.ics.uci.edu/dataset/222/bank+marketing
+Or direct download:
+bank.zip
