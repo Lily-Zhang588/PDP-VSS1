@@ -3,46 +3,55 @@
 Created on Thu May 15 09:56:26 2025
 
 @author: Lily
-"""
-# -*- coding: utf-8 -*-
-"""
-Created on Thu May 15 05:18:46 2025
 
-@author: Lily
+Performance Comparison Visualization for PDP-VSS Framework
+This script generates comparative plots for:
+1. Model Accuracy vs Privacy Budget
+2. Communication Overhead vs Number of Clients 
+3. Attack Success Rate vs Privacy Budget
 """
+
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
 
-# 设置全局字体大小 (增大字号)
+# =============================================
+# 1. GLOBAL VISUALIZATION SETTINGS
+# =============================================
+# Configure global plot settings (enhanced for readability)
 plt.rcParams.update({
-    'font.size': 12,           # 全局基础字号
-    'axes.titlesize': 14,      # 子图标题字号
-    'axes.labelsize': 12,      # 坐标轴标签字号
-    'xtick.labelsize': 11,     # x轴刻度字号
-    'ytick.labelsize': 11,     # y轴刻度字号
-    'legend.fontsize': 11,     # 图例字号
-    'figure.titlesize': 16     # 图形总标题字号
+    'font.size': 12,           # Base font size
+    'axes.titlesize': 14,      # Subplot title size
+    'axes.labelsize': 12,      # Axis label size  
+    'xtick.labelsize': 11,     # X-axis tick size
+    'ytick.labelsize': 11,     # Y-axis tick size
+    'legend.fontsize': 11,     # Legend font size
+    'figure.titlesize': 16     # Figure title size
 })
 
-# 设置Seaborn风格
+# Configure Seaborn style with academic formatting
 sns.set_theme(style="whitegrid", 
               rc={
-                  'font.family': 'serif',
-                  'font.serif': ['Times New Roman'],
-                  'figure.dpi': 300,
+                  'font.family': 'serif',          # Use serif font
+                  'font.serif': ['Times New Roman'],  # Standard academic font
+                  'figure.dpi': 300,               # High resolution for publications
                   'savefig.dpi': 300,
-                  'figure.figsize': (10, 4.5),  # 增大画布尺寸
-                  'mathtext.fontset': 'stix'
+                  'figure.figsize': (10, 4.5),     # Larger figure dimensions
+                  'mathtext.fontset': 'stix'       # Math font matching text
               })
 
-# 模拟实验数据
-epsilon_values = np.array([0.1, 0.5, 1.0, 2.0])
-methods = ['PDP-VSS', 'DP-FL', 'HE-FL', 'Standard FL']
+# =============================================
+# 2. SIMULATED EXPERIMENTAL DATA
+# =============================================
+# Define test conditions
+epsilon_values = np.array([0.1, 0.5, 1.0, 2.0])  # Privacy budget values
+methods = ['PDP-VSS', 'DP-FL', 'HE-FL', 'Standard FL']  # Compared methods
 
-# 生成更真实的模拟数据
-np.random.seed(42)
+# Generate realistic simulation data with controlled randomness
+np.random.seed(42)  # For reproducibility
+
+# Accuracy data (%)
 accuracy = {
     'PDP-VSS': np.array([88.2, 92.9, 94.1, 94.8]) + np.random.normal(0, 0.3, 4),
     'DP-FL': np.array([82.5, 88.3, 90.7, 92.0]) + np.random.normal(0, 0.4, 4),
@@ -50,7 +59,8 @@ accuracy = {
     'Standard FL': np.array([89.5, 91.0, 91.8, 92.5]) + np.random.normal(0, 0.3, 4)
 }
 
-clients = np.arange(10, 110, 10)
+# Communication traffic data (MB)
+clients = np.arange(10, 110, 10)  # Client numbers from 10 to 100
 traffic = {
     'PDP-VSS': 15 + 0.25 * clients + np.random.normal(0, 1, len(clients)),
     'DP-FL': 20 + 0.45 * clients + np.random.normal(0, 1.5, len(clients)),
@@ -58,6 +68,7 @@ traffic = {
     'Standard FL': 10 + 0.4 * clients + np.random.normal(0, 1, len(clients))
 }
 
+# Security performance data (% attack success)
 attack_rate = {
     'PDP-VSS': np.array([18, 29, 35, 42]) + np.random.normal(0, 2, 4),
     'DP-FL': np.array([42, 58, 65, 70]) + np.random.normal(0, 3, 4),
@@ -65,39 +76,43 @@ attack_rate = {
     'Standard FL': np.array([85, 90, 92, 93]) + np.random.normal(0, 1, 4)
 }
 
-# 创建画布 (增大画布尺寸)
+# =============================================
+# 3. VISUALIZATION CONSTRUCTION
+# =============================================
+# Create figure with 3 subplots
 fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12, 4.5))
 
-# --------------------------
-# 子图1: 准确率 vs 隐私预算
-# --------------------------
-palette = sns.color_palette("colorblind")[:4]
+# Color palette for consistent method representation
+palette = sns.color_palette("colorblind")[:4]  # Colorblind-friendly palette
 
+# --------------------------
+# Subplot 1: Accuracy Comparison
+# --------------------------
 for i, method in enumerate(methods):
     ax1.errorbar(
         epsilon_values, accuracy[method], 
-        yerr=0.5,
-        fmt=['o', 's', '^', 'D'][i], 
+        yerr=0.5,                   # Error bars (±0.5%)
+        fmt=['o', 's', '^', 'D'][i],  # Distinct markers
         color=palette[i],
-        markersize=7,  # 增大标记尺寸
-        capsize=4,     # 增大误差条帽尺寸
-        linewidth=2,   # 加粗线条
+        markersize=7,               # Larger markers
+        capsize=4,                  # Error bar cap size
+        linewidth=2,                # Thicker lines
         label=method
     )
 
 ax1.set_xlabel('Privacy Budget ($\epsilon$)', fontsize=12)
 ax1.set_ylabel('Accuracy (%)', fontsize=12)
-ax1.set_title('(a) Model Accuracy', fontsize=14, pad=15)  # 增加标题间距
+ax1.set_title('(a) Model Accuracy', fontsize=14, pad=15)
 ax1.legend(frameon=True, edgecolor='black', fontsize=11)
 
-# 显著性标注 (增大字号)
+# Add statistical significance annotation
 ax1.annotate('* p < 0.05', xy=(0.3, 86), 
              xytext=(0.4, 86.5),
              arrowprops=dict(arrowstyle='->', lw=1.5),
              fontsize=11)
 
 # --------------------------
-# 子图2: 通信开销
+# Subplot 2: Communication Efficiency  
 # --------------------------
 for i, method in enumerate(methods):
     sns.regplot(
@@ -106,7 +121,7 @@ for i, method in enumerate(methods):
         color=palette[i],
         marker=['o', 's', '^', 'D'][i],
         label=method,
-        scatter_kws={'s': 40},  # 增大散点尺寸
+        scatter_kws={'s': 40},  # Larger scatter points
         line_kws={'linestyle': '--', 'alpha': 0.5, 'linewidth': 2}
     )
 
@@ -115,39 +130,40 @@ ax2.set_ylabel('Traffic per Update (MB)', fontsize=12)
 ax2.set_title('(b) Communication Overhead', fontsize=14, pad=15)
 
 # --------------------------
-# 子图3: 攻击成功率
+# Subplot 3: Security Performance
 # --------------------------
-bar_width = 0.2
-x = np.arange(len(epsilon_values))
+bar_width = 0.2  # Width for grouped bars
+x = np.arange(len(epsilon_values))  # X-axis positions
 
+# Plot grouped bars for each method
 for i, method in enumerate(methods):
     ax3.bar(
         x + i*bar_width, attack_rate[method], 
         width=bar_width, 
         color=palette[i],
         edgecolor='black', 
-        linewidth=1,      # 加粗边框
+        linewidth=1,      # Bar border thickness
         label=method
     )
 
 ax3.set_xlabel('Privacy Budget ($\epsilon$)', fontsize=12)
 ax3.set_ylabel('Attack Success Rate (%)', fontsize=12)
 ax3.set_title('(c) Security Performance', fontsize=14, pad=15)
-ax3.set_xticks(x + bar_width*1.5)
+ax3.set_xticks(x + bar_width*1.5)  # Center x-ticks
 ax3.set_xticklabels(epsilon_values, fontsize=11)
 
-# 合规阈值线 (加粗)
+# Add regulatory compliance threshold line
 ax3.axhline(30, color='red', linestyle='--', linewidth=1.5, alpha=0.7)
 ax3.text(1.5, 32, 'GDPR Threshold', color='red', fontsize=11)
 
-# --------------------------
-# 整体调整
-# --------------------------
-sns.despine()
-plt.tight_layout(pad=3)  # 增加子图间距
+# =============================================
+# 4. FINAL FORMATTING AND EXPORT
+# =============================================
+sns.despine()  # Clean axis spines
+plt.tight_layout(pad=3)  # Adjust subplot spacing
 
-# 保存 (更高DPI)
-plt.savefig('pdp_vss_comparison.pdf', bbox_inches='tight')
-plt.savefig('pdp_vss_comparison.png', bbox_inches='tight', dpi=600)
+# Save publication-ready figures
+plt.savefig('pdp_vss_comparison.pdf', bbox_inches='tight')  # Vector format
+plt.savefig('pdp_vss_comparison.png', bbox_inches='tight', dpi=600)  # High-res raster
 
 plt.show()
