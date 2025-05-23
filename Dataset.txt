@@ -13,7 +13,7 @@ Or load directly via scikit-learn:
 from sklearn.datasets import load_breast_cancer
 data = load_breast_cancer()
 
-3.3. Give Me Some Credit (GMSC) Dataset
+3. Give Me Some Credit (GMSC) Dataset
 
 Description: Credit scoring dataset (150,000 samples, 10 features).
 Original Source: Kaggle competition data.
