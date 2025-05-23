@@ -1,0 +1,165 @@
+import numpy as np
+from typing import List, Tuple
+from collections import defaultdict
+import hashlib
+
+class PDP_VSS:
+    def __init__(self, num_clients: int, epsilon_base: float = 1.0, delta: float = 1e-6, 
+                 threshold: int = 3, num_servers: int = 5):
+        """
+        Initialize PDP-VSS framework
+        :param num_clients: Number of clients
+        :param epsilon_base: Base privacy budget
+        :param delta: Differential privacy delta parameter
+        :param threshold: Secret sharing threshold (t,n)
+        :param num_servers: Number of servers (n)
+        """
+        self.num_clients = num_clients
+        self.epsilon_base = epsilon_base
+        self.delta = delta
+        self.threshold = threshold
+        self.num_servers = num_servers
+        self.client_epsilons = {}  # Stores personalized privacy budgets for clients
+
+    def calculate_personalized_epsilon(self, data_sensitivity: List[int]) -> dict:
+        """
+        Calculate personalized differential privacy budgets (Equation 2)
+        :param data_sensitivity: List of data sensitivity values for each client
+        :return: Dictionary mapping client IDs to their epsilon values
+        """
+        max_sensitivity = max(data_sensitivity)
+        for client_id in range(self.num_clients):
+            self.client_epsilons[client_id] = self.epsilon_base * (data_sensitivity[client_id] / max_sensitivity)
+        return self.client_epsilons
+
+    def add_pdp_noise(self, model_params: np.ndarray, client_id: int) -> np.ndarray:
+        """
+        Add personalized differential privacy noise (Equation 1/5)
+        :param model_params: Model parameter vector
+        :param client_id: Client ID
+        :return: Noisy parameters
+        """
+        epsilon = self.client_epsilons[client_id]
+        # Calculate noise standard deviation (Δ2f assumed as 1, should be adjusted for actual models)
+        sigma = np.sqrt(2 * np.log(1.25 / self.delta)) / epsilon
+        noise = np.random.normal(0, sigma, size=model_params.shape)
+        return model_params + noise
+
+    def secret_share(self, secret: np.ndarray, p: int = 2**31 - 1) -> List[Tuple[int, np.ndarray]]:
+        """
+        Verifiable Secret Sharing (Equation 3)
+        :param secret: Secret to be shared (model parameters)
+        :param p: Large prime number
+        :return: List of (server_id, share) tuples
+        """
+        if secret.ndim > 1:
+            secret = secret.flatten()
+        
+        shares = []
+        coefficients = [secret] + [np.random.randint(1, p, size=secret.shape) for _ in range(self.threshold - 1)]
+        
+        for server_id in range(1, self.num_servers + 1):
+            share = np.zeros_like(secret)
+            for exp in range(self.threshold):
+                share = (share + coefficients[exp] * (server_id ** exp)) % p
+            shares.append((server_id, share))
+        
+        return shares
+
+    def reconstruct_secret(self, shares: List[Tuple[int, np.ndarray]], p: int = 2**31 - 1) -> np.ndarray:
+        """
+        Reconstruct secret from shares
+        :param shares: List of at least t shares (server_id, share)
+        :param p: Large prime number
+        :return: Reconstructed model parameters
+        """
+        if len(shares) < self.threshold:
+            raise ValueError(f"At least {self.threshold} shares required for reconstruction")
+        
+        x = np.array([s[0] for s in shares])
+        secret = np.zeros_like(shares[0][1])
+        
+        for i, (xi, yi) in enumerate(shares):
+            numerator, denominator = 1, 1
+            for j, (xj, _) in enumerate(shares):
+                if i != j:
+                    numerator = (numerator * (-xj)) % p
+                    denominator = (denominator * (xi - xj)) % p
+            lagrange_coef = (numerator * pow(denominator, p-2, p)) % p
+            secret = (secret + yi * lagrange_coef) % p
+        
+        return secret
+
+    def verify_share(self, share: Tuple[int, np.ndarray], commitment: List[np.ndarray], p: int) -> bool:
+        """
+        Verify validity of a secret share
+        :param share: Share to verify (server_id, share)
+        :param commitment: Commitment values [g^a0, g^a1,...]
+        :param p: Large prime number
+        :return: Boolean indicating verification success
+        """
+        server_id, y = share
+        g = 2  # Generator
+        lhs = pow(g, int(y.sum()), p)
+        
+        rhs = 1
+        for j in range(len(commitment)):
+            rhs = (rhs * pow(commitment[j], server_id**j, p)) % p
+        
+        return lhs == rhs
+
+class FederatedAveraging:
+    def __init__(self, model_dim: int):
+        self.global_model = np.random.randn(model_dim)
+    
+    def aggregate(self, client_updates: List[np.ndarray], weights: List[float] = None) -> np.ndarray:
+        """
+        Weighted aggregation of client updates (FedAvg)
+        :param client_updates: List of client updates
+        :param weights: Data quantity weights for each client
+        :return: Global model update
+        """
+        if weights is None:
+            weights = np.ones(len(client_updates))
+        weights = np.array(weights) / sum(weights)
+        
+        avg_update = np.zeros_like(self.global_model)
+        for w, update in zip(weights, client_updates):
+            avg_update += w * update
+        
+        self.global_model += avg_update
+        return self.global_model
+
+# Example usage
+if __name__ == "__main__":
+    # Initialization
+    num_clients = 10
+    model_dim = 100
+    pdp_vss = PDP_VSS(num_clients=num_clients, epsilon_base=1.0, threshold=3, num_servers=5)
+    fl_model = FederatedAveraging(model_dim)
+    
+    # Simulate client data sensitivity and calculate personalized epsilons
+    data_sensitivity = np.random.randint(1, 100, size=num_clients)
+    client_epsilons = pdp_vss.calculate_personalized_epsilon(data_sensitivity)
+    print("Personalized privacy budgets:", client_epsilons)
+    
+    # Simulate client local training
+    client_updates = []
+    for client_id in range(num_clients):
+        # Generate mock update
+        update = np.random.randn(model_dim) * 0.1
+        
+        # Add PDP noise
+        noisy_update = pdp_vss.add_pdp_noise(update, client_id)
+        
+        # Secret sharing
+        shares = pdp_vss.secret_share(noisy_update)
+        print(f"Client {client_id} generated {len(shares)} secret shares")
+        
+        # Simulate server-side share aggregation (simplified by selecting first t shares)
+        reconstructed = pdp_vss.reconstruct_secret(shares[:pdp_vss.threshold])
+        client_updates.append(reconstructed)
+    
+    # Global aggregation
+    global_model = fl_model.aggregate(client_updates)
+    print("Global model updated, norm:", np.linalg.norm(global_model))
