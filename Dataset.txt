@@ -17,7 +17,8 @@ data = load_breast_cancer()
 
 Description: Credit scoring dataset (150,000 samples, 10 features).
 Original Source: Kaggle competition data.
-Download Link:https://www.kaggle.com/
+Download Link:https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients
+Or download link：https://www.kaggle.com/competitions/GiveMeSomeCredit/data
 
 4. Bank Marketing Dataset (BMD)
 
